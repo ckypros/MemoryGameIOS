@@ -74,7 +74,7 @@ struct CardView: View {
                     .padding(5)
                     .opacity(0.5)
                 Text(card.content)
-                    .rotationEffect(Angle.degrees(card.isMatched ? 360 : 0))
+                    .rotationEffect(Angle.degrees(card.isMatched ? 360 : 0))  // animate on match
                     .animation(Animation.linear(duration: 1).repeatForever(autoreverses: false))
                     .font(Font.system(size: DrawingConstants.fontSize))
                     .scaleEffect(scale(thatFits: geometry.size))
