@@ -34,6 +34,10 @@ struct MemoryGame<CardContent> where CardContent: Equatable {
         }
     }
     
+    mutating func shuffle() {
+        cards.shuffle()
+    }
+    
     init(numberOfPairsOfCards: Int, createCardContent: (Int) -> CardContent) {
         cards = []
         for pairIndex in 0..<numberOfPairsOfCards {
@@ -45,11 +49,78 @@ struct MemoryGame<CardContent> where CardContent: Equatable {
     }
     
     struct Card: Identifiable {
-        var isFaceUp = false
-        var isMatched = false
+        var isFaceUp = false {
+            didSet {
+                if isFaceUp {
+                    startUsingBonusTime()
+                } else {
+                    stopUsingBonusTime()
+                }
+            }
+        }
+        var isMatched = false {
+            didSet {
+                if isMatched {
+                    stopUsingBonusTime()
+                }
+            }
+        }
         var content: CardContent
         var id: Int
+        
+        // MARK: - Bonus Time
+        
+        // Time remaining to score a bonus
+        var bonusTimeLimit : TimeInterval = 6
+        
+        // Duration of time spent face up
+        private var faceUpTime: TimeInterval {
+            if let lastFaceUpDate = self.lastFaceUpDate {
+                return pastFaceUpTime + Date().timeIntervalSince(lastFaceUpDate)
+            } else {
+                return pastFaceUpTime
+            }
+        }
+        
+        // Last time the card was turned up
+        var lastFaceUpDate: Date?
+        
+        // Accumulated time spent face up in the past (not incl. current)
+        var pastFaceUpTime: TimeInterval = 0
+        
+        // Percentage of bonus time remaining
+        var bonusTimeRemaining: TimeInterval {
+            max(0, bonusTimeLimit - faceUpTime)
+        }
+        
+        var bonusRemaining: Double {
+            (bonusTimeLimit > 0 && bonusTimeRemaining > 0) ? bonusTimeRemaining / bonusTimeLimit : 0
+        }
+        
+        // Was bonus earned for the match?
+        var hasEarnedBonus: Bool {
+            isMatched && bonusTimeRemaining > 0
+        }
+        
+        // Is bonus time being consumed, when face up and not matched
+        var isConsumingBonusTime: Bool {
+            isFaceUp && !isMatched && bonusTimeRemaining > 0
+        }
+        
+        // When face up, this starts
+        private mutating func startUsingBonusTime() {
+            if isConsumingBonusTime, lastFaceUpDate == nil {
+                lastFaceUpDate = Date()
+            }
+        }
+        
+        private mutating func stopUsingBonusTime() {
+            pastFaceUpTime = faceUpTime
+            self.lastFaceUpDate = nil
+        }
     }
+    
+    
 }
 
 
